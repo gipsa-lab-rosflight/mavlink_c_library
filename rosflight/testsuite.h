@@ -1095,6 +1095,50 @@ static void mavlink_test_small_battery(uint8_t system_id, uint8_t component_id, 
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_rosflight_multi_range(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_rosflight_multi_range_t packet_in = {
+		{ 17235, 17236, 17237, 17238, 17239, 17240, 17241, 17242, 17243, 17244, 17245, 17246, 17247, 17248, 17249, 17250 },101
+    };
+	mavlink_rosflight_multi_range_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.nb_ranges = packet_in.nb_ranges;
+        
+        	mav_array_memcpy(packet1.ranges, packet_in.ranges, sizeof(uint16_t)*16);
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_rosflight_multi_range_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_rosflight_multi_range_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_rosflight_multi_range_pack(system_id, component_id, &msg , packet1.nb_ranges , packet1.ranges );
+	mavlink_msg_rosflight_multi_range_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_rosflight_multi_range_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.nb_ranges , packet1.ranges );
+	mavlink_msg_rosflight_multi_range_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_rosflight_multi_range_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_rosflight_multi_range_send(MAVLINK_COMM_1 , packet1.nb_ranges , packet1.ranges );
+	mavlink_msg_rosflight_multi_range_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_rosflight(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_offboard_control(system_id, component_id, last_msg);
@@ -1119,6 +1163,7 @@ static void mavlink_test_rosflight(uint8_t system_id, uint8_t component_id, mavl
 	mavlink_test_rosflight_gnss(system_id, component_id, last_msg);
 	mavlink_test_rosflight_gnss_raw(system_id, component_id, last_msg);
 	mavlink_test_small_battery(system_id, component_id, last_msg);
+	mavlink_test_rosflight_multi_range(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus
